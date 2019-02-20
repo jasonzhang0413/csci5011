@@ -6,6 +6,7 @@ import (
     "os/exec"
     "runtime"
     "time"
+    "os"
 )
 
 var cout1 chan []byte = make(chan []byte)
@@ -41,10 +42,21 @@ func start() {
     if err != nil {
         log.Fatal(err)
     }
-    stdout1, err2 := cmd1.StdoutPipe()
-    if err2 != nil {
-        log.Fatal(err2)
+    stdout1, err := cmd1.StdoutPipe()
+    if err != nil {
+        log.Fatal(err)
     }
+    file1, err := os.Create("player1.txt")
+    if err != nil {
+        panic(err)
+    }
+    // close fo on exit and check for its returned error
+    defer func() {
+        if err := file1.Close(); err != nil {
+            panic(err)
+        }
+    }()
+
     if err := cmd1.Start(); err != nil {
         log.Fatal(err)
     }
@@ -54,10 +66,21 @@ func start() {
     if err != nil {
         log.Fatal(err)
     }
-    stdout2, err2 := cmd2.StdoutPipe()
-    if err2 != nil {
-        log.Fatal(err2)
+    stdout2, err := cmd2.StdoutPipe()
+    if err != nil {
+        log.Fatal(err)
     }
+    file2, err := os.Create("player2.txt")
+    if err != nil {
+        panic(err)
+    }
+    // close fo on exit and check for its returned error
+    defer func() {
+        if err := file1.Close(); err != nil {
+            panic(err)
+        }
+    }()
+
     if err := cmd2.Start(); err != nil {
         log.Fatal(err)
     }
@@ -72,18 +95,25 @@ func start() {
     for b1 || b2 {
         select {
         case s := <-cout1:
+            // Write to file for audit before write to stdin
             stdin1.Write(s)
             buf := make([]byte, 2)
             runtime.Gosched()
             time.Sleep(100 * time.Millisecond)
             stdout1.Read(buf)
+            // Read from stdout and write to file for audit before put into channel
+            file1.Write(buf)
             cin1 <- buf
         case s := <-cout2:
+            // Write to file for audit before write to stdin
+            file2.Write(s)
             stdin2.Write(s)
             buf := make([]byte, 2)
             runtime.Gosched()
             time.Sleep(100 * time.Millisecond)
             stdout2.Read(buf)
+            // Read from stdout and write to file for audit before put into channel
+            file2.Write(buf)
             cin2 <- buf
         case b1 = <-exit1:
             if b1 {
