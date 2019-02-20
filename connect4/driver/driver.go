@@ -11,17 +11,15 @@ import (
 
 var cout1 chan []byte = make(chan []byte)
 var cin1 chan []byte = make(chan []byte)
-var exit1 chan bool = make(chan bool)
 
 var cout2 chan []byte = make(chan []byte)
 var cin2 chan []byte = make(chan []byte)
-var exit2 chan bool = make(chan bool)
+
+var cmd1, cmd2 *exec.Cmd
 
 func Foo(x byte) byte { return call_port1([]byte{1, x}) }
 func Foo2(x byte) byte { return call_port2([]byte{1, x}) }
 func Bar(y byte) byte { return call_port1([]byte{2, y}) }
-func Exit1() byte      { return call_port1([]byte{0, 0}) }
-func Exit2() byte      { return call_port2([]byte{0, 0}) }
 func call_port1(s []byte) byte {
     cout1 <- s
     s = <-cin1
@@ -37,7 +35,7 @@ func call_port2(s []byte) byte {
 func start() {
     fmt.Println("start")
 
-    cmd1 := exec.Command("../player/player")
+    cmd1 = exec.Command("../player/player")
     stdin1, err := cmd1.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -61,7 +59,7 @@ func start() {
         log.Fatal(err)
     }
 
-    cmd2 := exec.Command("../player/player")
+    cmd2 = exec.Command("../player/player")
     stdin2, err := cmd2.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -90,9 +88,7 @@ func start() {
     defer stdin2.Close()
     defer stdout2.Close()
 
-    b1 := true
-    b2 := true
-    for b1 || b2 {
+    for {
         select {
         case s := <-cout1:
             // Write to file for audit before write to stdin
@@ -115,16 +111,6 @@ func start() {
             // Read from stdout and write to file for audit before put into channel
             file2.Write(buf)
             cin2 <- buf
-        case b1 = <-exit1:
-            if b1 {
-                fmt.Printf("Exit1")
-                //return //os.Exit(0)
-            }
-        case b2 = <-exit2:
-            if b2 {
-                fmt.Printf("Exit2")
-                //return //os.Exit(0)
-            }
         }
 
     }
@@ -140,9 +126,8 @@ func main() {
     }
     fmt.Println("30+1=", Foo(100)) //30+1= 31
     fmt.Println("30+1=", Foo2(200)) //30+1= 31
-    Exit1()
-    //exit1 <- true
-    Exit2()
-    //exit2 <- true
+    
+    cmd1.Process.Kill()
+    cmd2.Process.Kill()
 
 }
