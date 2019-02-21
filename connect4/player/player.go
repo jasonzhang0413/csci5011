@@ -8,6 +8,7 @@ import (
     //"fmt"
     "math/rand"
     "bufio"
+	"fmt"
 )
 
 var width int
@@ -28,11 +29,13 @@ func main() {
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.Parse()
 
-    file1, _ = os.Create("player_player1.txt")
+    file1, _ = os.Create(fmt.Sprintf("%s%d%s", "player_pid_", os.Getpid(), ".txt"))
 
     defer file1.Close()
 
-    file1.WriteString("temp\n")
+    file1.WriteString("Player started\n")
+	file1.WriteString(fmt.Sprintf("%s%d%s", "width is ", width, "\n"))
+	file1.WriteString(fmt.Sprintf("%s%d%s", "height is ", height, "\n"))
 
     for {
         state, err := GetState()
@@ -56,6 +59,7 @@ func GetState() (*State, error) {
     fmt.Println(string(jsonBody))*/
 
     file1.WriteString("ready to read\n")
+
     reader := bufio.NewReader(os.Stdin)
     data, err := reader.ReadBytes('\n')
 

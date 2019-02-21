@@ -47,7 +47,7 @@ func call_port2(s []byte) byte {
 func start() {
     fmt.Println("start")
 
-    cmd1 = exec.Command("../player/player")
+    cmd1 = exec.Command("../player/player", fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
     stdin1, err := cmd1.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -71,7 +71,7 @@ func start() {
         log.Fatal(err)
     }
 
-    cmd2 = exec.Command("../player/player")
+    cmd2 = exec.Command("../player/player", fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
     stdin2, err := cmd2.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -158,9 +158,6 @@ func main() {
         fmt.Println(moveRequest)
     }
 
-
-    //fmt.Println("30+1=", Foo(100)) //30+1= 31
-    //fmt.Println("30+1=", Foo2(200)) //30+1= 31
 
     cmd1.Process.Kill()
     cmd2.Process.Kill()
