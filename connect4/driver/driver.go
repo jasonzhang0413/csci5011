@@ -8,6 +8,8 @@ import (
     "time"
     "os"
     "flag"
+    "encoding/json"
+    "bufio"
 )
 
 var cout1 chan []byte = make(chan []byte)
@@ -17,20 +19,23 @@ var cout2 chan []byte = make(chan []byte)
 var cin2 chan []byte = make(chan []byte)
 
 var width, height int
-var grid [width][height]int
+var tournament bool
 var cmd1, cmd2 *exec.Cmd
 
 type State struct {
     Grid   [][]int `json:"grid"`
 }
 
-func Foo(x byte) byte { return call_port1([]byte{1, x}) }
+type Request struct {
+    Move int `json:"move"`
+}
+
+//func Foo(x byte) byte { return call_port1([]byte{1, x}) }
 func Foo2(x byte) byte { return call_port2([]byte{1, x}) }
-func Bar(y byte) byte { return call_port1([]byte{2, y}) }
-func call_port1(s []byte) byte {
-    cout1 <- s
-    s = <-cin1
-    return s[1]
+func call_port1(bytes []byte) []byte {
+    cout1 <- bytes
+    bytes = <-cin1
+    return bytes
 }
 
 func call_port2(s []byte) byte {
@@ -99,25 +104,26 @@ func start() {
         select {
         case s := <-cout1:
             // Write to file for audit before write to stdin
+            file1.Write(s)
             stdin1.Write(s)
-            buf := make([]byte, 2)
             runtime.Gosched()
             time.Sleep(100 * time.Millisecond)
-            stdout1.Read(buf)
+            reader := bufio.NewReader(stdout1)
+            data, _ := reader.ReadBytes('\n')
             // Read from stdout and write to file for audit before put into channel
-            file1.Write(buf)
-            cin1 <- buf
+            file1.Write(data)
+            cin1 <- data
         case s := <-cout2:
             // Write to file for audit before write to stdin
             file2.Write(s)
             stdin2.Write(s)
-            buf := make([]byte, 2)
             runtime.Gosched()
             time.Sleep(100 * time.Millisecond)
-            stdout2.Read(buf)
+            reader := bufio.NewReader(stdout2)
+            data, _ := reader.ReadBytes('\n')
             // Read from stdout and write to file for audit before put into channel
-            file2.Write(buf)
-            cin2 <- buf
+            file2.Write(data)
+            cin2 <- data
         }
 
     }
@@ -126,20 +132,47 @@ func main() {
 
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
+    flag.BoolVar(&tournament, "tournament", false, "Tournament mode")
     flag.Parse()
 
     go start()
     runtime.Gosched()
-    fmt.Println("30+1=", Foo(30)) //30+1= 31
-    fmt.Println("2*40=", Bar(40)) //2*40= 80
 
-    for i := 1; i <= 10; i++ {
-        fmt.Printf("end %d \n", i)
+    times := 1
+    if tournament {
+        times = 20
     }
-    fmt.Println("30+1=", Foo(100)) //30+1= 31
-    fmt.Println("30+1=", Foo2(200)) //30+1= 31
+
+    for i := 1; i <= times; i++ {
+        state := StartNewGame()
+        var moveRequest Request
+
+        bytes, err := json.Marshal(state)
+        if err != nil {
+            fmt.Println("Fail to marshal state " + string(bytes))
+        }
+        request := call_port1(append(bytes, '\n'))
+        json.Unmarshal(request, &moveRequest)
+
+        fmt.Println("===")
+        fmt.Println(moveRequest)
+    }
+
+
+    //fmt.Println("30+1=", Foo(100)) //30+1= 31
+    //fmt.Println("30+1=", Foo2(200)) //30+1= 31
 
     cmd1.Process.Kill()
     cmd2.Process.Kill()
 
+}
+func StartNewGame() *State {
+    grid := make([][]int, width)
+    for i := range grid {
+        grid[i] = make([]int, height)
+    }
+
+    initialState := &State{Grid: grid}
+
+    return initialState
 }
