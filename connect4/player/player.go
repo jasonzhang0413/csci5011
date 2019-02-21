@@ -5,13 +5,15 @@ import (
     "os"
     "flag"
     "encoding/json"
-    //"io/ioutil"
-    "fmt"
+    //"fmt"
     "math/rand"
+    "bufio"
 )
 
 var width int
 var height int
+
+var file1 *os.File
 
 type State struct {
     Grid [][]int `json:"grid"`
@@ -25,6 +27,12 @@ func main() {
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.Parse()
+
+    file1, _ = os.Create("player_player1.txt")
+
+    defer file1.Close()
+
+    file1.WriteString("temp\n")
 
     for {
         state, err := GetState()
@@ -43,31 +51,25 @@ func main() {
 
 func GetState() (*State, error) {
 
-    jsonBody := []byte(`{"grid":[[0,0,0,0,0,0],[0,0,0,0,1,1],[0,0,0,0,0,2],[0,0,0,0,0,0],[0,0,0,0,0,2],[0,0,0,0,0,1],[0,0,0,0,0,0]]}`)
+    /*jsonBody := []byte(`{"grid":[[0,0,0,0,0,0],[0,0,0,0,1,1],[0,0,0,0,0,2],[0,0,0,0,0,0],[0,0,0,0,0,2],[0,0,0,0,0,1],[0,0,0,0,0,0]]}`)
 
-    fmt.Println(string(jsonBody))
+    fmt.Println(string(jsonBody))*/
 
-    /*data, err := ioutil.ReadAll(os.Stdin)
+    file1.WriteString("ready to read\n")
+    reader := bufio.NewReader(os.Stdin)
+    data, err := reader.ReadBytes('\n')
 
-    if err != nil {
-        return nil, err
-    }
-
-    fmt.Println("Read ==>" + string(data))*/
     var state State
-    err := json.Unmarshal(jsonBody, &state)
+
+    //dec := json.NewDecoder(os.Stdin)
+    //dec.Decode(&state)
+
+    //err := json.Unmarshal(jsonBody, &state)
+    err = json.Unmarshal(data, &state)
 
     if err != nil {
         return &state, err
     }
-    /*body := make([]byte, 0, 4*1024)
-
-    n, err := os.Stdin.Read(body)
-    if err != nil {
-        return body, err
-    }
-
-    log.Printf("Read input length ", n)*/
 
     return &state, nil
 }
