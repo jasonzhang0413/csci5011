@@ -5,51 +5,61 @@ import (
     "os"
     "flag"
     "encoding/json"
-    "io/ioutil"
+    //"io/ioutil"
     "fmt"
-    //"bufio"
+    "math/rand"
 )
 
-var Width int
+var width int
 var height int
 
-func foo(x byte) byte { return x + 1 }
-func bar(y byte) byte { return y * 2 }
-
-func ReadByte() byte {
-    b1 := make([]byte, 1)
-    for {
-        n, _ := os.Stdin.Read(b1)
-        if n == 1 {
-            return b1[0]
-        }
-    }
-}
-func WriteByte(b byte) {
-    b1 := []byte{b}
-    for {
-        n, _ := os.Stdout.Write(b1)
-        if n == 1 {
-            return
-        }
-    }
+type State struct {
+    Grid [][]int `json:"grid"`
 }
 
-func ReadBytes() ([]byte, error) {
+type Request struct {
+    Move int `json:"move"`
+}
 
-    dat, err := ioutil.ReadFile("./test.json")
+func main() {
+    flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
+    flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
+    flag.Parse()
 
-    fmt.Println(string(dat))
+    for {
+        state, err := GetState()
+        if err != nil {
+            log.Println("error reading " + err.Error())
+        }
 
-    var state State
-    json.Unmarshal(dat, &state)
+        moveIndex := MakeValidMove(state)
+        request := &Request{Move: moveIndex}
 
-    data, err := ioutil.ReadAll(os.Stdin)
+        enc := json.NewEncoder(os.Stdout)
+        enc.Encode(request)
+    }
+
+}
+
+func GetState() (*State, error) {
+
+    jsonBody := []byte(`{"grid":[[0,0,0,0,0,0],[0,0,0,0,1,1],[0,0,0,0,0,2],[0,0,0,0,0,0],[0,0,0,0,0,2],[0,0,0,0,0,1],[0,0,0,0,0,0]]}`)
+
+    fmt.Println(string(jsonBody))
+
+    /*data, err := ioutil.ReadAll(os.Stdin)
 
     if err != nil {
-        return data, err
+        return nil, err
     }
 
+    fmt.Println("Read ==>" + string(data))*/
+    var state State
+    err := json.Unmarshal(jsonBody, &state)
+
+    if err != nil {
+        return &state, err
+    }
     /*body := make([]byte, 0, 4*1024)
 
     n, err := os.Stdin.Read(body)
@@ -59,41 +69,25 @@ func ReadBytes() ([]byte, error) {
 
     log.Printf("Read input length ", n)*/
 
-    return data, nil
+    return &state, nil
 }
 
-func main() {
-
-    flag.IntVar(&Width, "width", 7, "The width of grid for connect four game, default 7")
-    flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
-
-
-    data, err := ReadBytes()
-    if err != nil {
-        log.Printf(err.Error())
+func MakeValidMove(state *State) int {
+    var moveIndex int
+    for {
+        moveIndex = rand.Intn(width)
+        if ValidateMove(state, moveIndex) {
+            break
+        }
     }
 
-    //bodyStr := string(body)
+    return moveIndex
+}
 
-    state := State{}
-    json.Unmarshal(data, &state)
-
-    var res byte
-    for {
-        fn := ReadByte()
-        log.Println("fn=", fn)
-        arg := ReadByte()
-        log.Println("arg=", arg)
-        if fn == 1 {
-            res = foo(arg)
-        } else if fn == 2 {
-            res = bar(arg)
-        } else if fn == 0 {
-            return //exit
-        } else {
-            res = fn //echo
-        }
-        WriteByte(1)
-        WriteByte(res)
+func ValidateMove(state *State, moveIndex int) bool {
+    if state.Grid[moveIndex][0] == 0 {
+        return true
+    } else {
+        return false
     }
 }

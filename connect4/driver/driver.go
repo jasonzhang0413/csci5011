@@ -7,6 +7,7 @@ import (
     "runtime"
     "time"
     "os"
+    "flag"
 )
 
 var cout1 chan []byte = make(chan []byte)
@@ -15,7 +16,13 @@ var cin1 chan []byte = make(chan []byte)
 var cout2 chan []byte = make(chan []byte)
 var cin2 chan []byte = make(chan []byte)
 
+var width, height int
+var grid [width][height]int
 var cmd1, cmd2 *exec.Cmd
+
+type State struct {
+    Grid   [][]int `json:"grid"`
+}
 
 func Foo(x byte) byte { return call_port1([]byte{1, x}) }
 func Foo2(x byte) byte { return call_port2([]byte{1, x}) }
@@ -116,6 +123,11 @@ func start() {
     }
 }
 func main() {
+
+    flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
+    flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
+    flag.Parse()
+
     go start()
     runtime.Gosched()
     fmt.Println("30+1=", Foo(30)) //30+1= 31
@@ -126,7 +138,7 @@ func main() {
     }
     fmt.Println("30+1=", Foo(100)) //30+1= 31
     fmt.Println("30+1=", Foo2(200)) //30+1= 31
-    
+
     cmd1.Process.Kill()
     cmd2.Process.Kill()
 
