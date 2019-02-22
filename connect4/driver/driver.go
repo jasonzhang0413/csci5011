@@ -30,18 +30,16 @@ type Request struct {
     Move int `json:"move"`
 }
 
-//func Foo(x byte) byte { return call_port1([]byte{1, x}) }
-func Foo2(x byte) byte { return call_port2([]byte{1, x}) }
 func call_port1(bytes []byte) []byte {
     cout1 <- bytes
     bytes = <-cin1
     return bytes
 }
 
-func call_port2(s []byte) byte {
-    cout2 <- s
-    s = <-cin2
-    return s[1]
+func call_port2(bytes []byte) []byte {
+    cout2 <- bytes
+    bytes = <-cin2
+    return bytes
 }
 
 func start() {
@@ -154,8 +152,27 @@ func main() {
         request := call_port1(append(bytes, '\n'))
         json.Unmarshal(request, &moveRequest)
 
-        fmt.Println("===")
         fmt.Println(moveRequest)
+        if ValidateMove(state, moveRequest.Move) {
+            MakeMove(state, moveRequest.Move, 1)
+        }
+        fmt.Println("New state")
+        fmt.Println(state.Grid)
+
+        bytes, err = json.Marshal(state)
+        if err != nil {
+            fmt.Println("Fail to marshal state " + string(bytes))
+        }
+        request = call_port2(append(bytes, '\n'))
+        json.Unmarshal(request, &moveRequest)
+
+        fmt.Println(moveRequest)
+        if ValidateMove(state, moveRequest.Move) {
+            MakeMove(state, moveRequest.Move, 2)
+        }
+        fmt.Println("New state")
+        fmt.Println(state.Grid)
+
     }
 
 
@@ -163,6 +180,7 @@ func main() {
     cmd2.Process.Kill()
 
 }
+
 func StartNewGame() *State {
     grid := make([][]int, width)
     for i := range grid {
@@ -172,4 +190,21 @@ func StartNewGame() *State {
     initialState := &State{Grid: grid}
 
     return initialState
+}
+
+func ValidateMove(state *State, moveIndex int) bool {
+    if state.Grid[moveIndex][0] == 0 {
+        return true
+    } else {
+        return false
+    }
+}
+
+func MakeMove(state *State, moveIndex int, player int) {
+    for i := height - 1; i >= 0; i-- {
+        if state.Grid[moveIndex][i] == 0 {
+            state.Grid[moveIndex][i] = player
+            break
+        }
+    }
 }
