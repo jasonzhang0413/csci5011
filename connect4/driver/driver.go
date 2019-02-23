@@ -19,7 +19,7 @@ var cout2 chan []byte = make(chan []byte)
 var cin2 chan []byte = make(chan []byte)
 
 var width, height int
-var tournament bool
+var tournamentTimes int
 var player1Cmd, player2Cmd string
 var winCounter1, winCounter2, drawCounter int
 var cmd1, cmd2 *exec.Cmd
@@ -134,18 +134,13 @@ func main() {
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.StringVar(&player1Cmd, "player1Cmd", "../player/player", "The command to invoke player1 program")
     flag.StringVar(&player2Cmd, "player2Cmd", "../player/player", "The command to invoke player2 program")
-    flag.BoolVar(&tournament, "tournament", false, "Tournament mode")
+    flag.IntVar(&tournamentTimes, "tournament", 1, "Tournament mode, number of games")
     flag.Parse()
 
     go start()
     runtime.Gosched()
 
-    times := 1
-    if tournament {
-        times = 20
-    }
-
-    for i := 1; i <= times; i++ {
+    for i := 1; i <= tournamentTimes; i++ {
         state := StartNewGame()
         var moveRequest Request
 
@@ -214,10 +209,10 @@ func main() {
         }
     }
 
-    fmt.Println("Result")
-    fmt.Println(winCounter1)
-    fmt.Println(winCounter2)
-    fmt.Println(drawCounter)
+    fmt.Printf("Result for %d times of game play\n", tournamentTimes)
+    fmt.Printf("Player 1 wins %d times\n", winCounter1)
+    fmt.Printf("Player 2 wins %d times\n", winCounter2)
+    fmt.Printf("Draw happens %d times\n", drawCounter)
 
     cmd1.Process.Kill()
     cmd2.Process.Kill()
