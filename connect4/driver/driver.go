@@ -20,6 +20,7 @@ var cin2 chan []byte = make(chan []byte)
 
 var width, height int
 var tournament bool
+var player1Cmd, player2Cmd string
 var winCounter1, winCounter2, drawCounter int
 var cmd1, cmd2 *exec.Cmd
 
@@ -46,7 +47,7 @@ func call_port2(bytes []byte) []byte {
 func start() {
     fmt.Println("start")
 
-    cmd1 = exec.Command("../player/player", fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
+    cmd1 = exec.Command(player1Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
     stdin1, err := cmd1.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -70,7 +71,7 @@ func start() {
         log.Fatal(err)
     }
 
-    cmd2 = exec.Command("../player/player", fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
+    cmd2 = exec.Command(player2Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
     stdin2, err := cmd2.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -131,6 +132,8 @@ func main() {
 
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
+    flag.StringVar(&player1Cmd, "player1Cmd", "../player/player", "The command to invoke player1 program")
+    flag.StringVar(&player2Cmd, "player2Cmd", "../player/player", "The command to invoke player2 program")
     flag.BoolVar(&tournament, "tournament", false, "Tournament mode")
     flag.Parse()
 
@@ -147,6 +150,7 @@ func main() {
         var moveRequest Request
 
         for {
+            //Player 1
             bytes, err := json.Marshal(state)
             if err != nil {
                 fmt.Println("Fail to marshal state " + string(bytes))
@@ -154,27 +158,30 @@ func main() {
             request := call_port1(append(bytes, '\n'))
             json.Unmarshal(request, &moveRequest)
 
-            fmt.Println(moveRequest)
+            fmt.Printf("move request made by player 1, column index %d\n", moveRequest)
             if ValidateMove(state, moveRequest.Move) {
                 rowIndex := MakeMove(state, moveRequest.Move, 1)
+                fmt.Println("Current state after player 1 moved")
+                fmt.Println(state.Grid)
                 if checkWinning(state.Grid, moveRequest.Move, rowIndex, 1) {
                     // player 1 win, start new game
+                    fmt.Println("player 1 wins")
                     winCounter1++
                     break
                 } else if checkDraw(state.Grid) {
                     // draw, start new game
+                    fmt.Println("Draw after player 1 moved")
                     drawCounter++
                     break
                 }
+                fmt.Println("player 1 does not win after move")
             } else {
                 //player 2 win
                 winCounter2++
                 break
             }
-            fmt.Println("New state")
-            fmt.Println(state.Grid)
 
-
+            //Player 2
             bytes, err = json.Marshal(state)
             if err != nil {
                 fmt.Println("Fail to marshal state " + string(bytes))
@@ -182,25 +189,28 @@ func main() {
             request = call_port2(append(bytes, '\n'))
             json.Unmarshal(request, &moveRequest)
 
-            fmt.Println(moveRequest)
+            fmt.Printf("move request made by player 2, column index %d\n", moveRequest)
             if ValidateMove(state, moveRequest.Move) {
                 rowIndex := MakeMove(state, moveRequest.Move, 2)
+                fmt.Println("Current state after player 2 moved")
+                fmt.Println(state.Grid)
                 if checkWinning(state.Grid, moveRequest.Move, rowIndex, 2) {
-                    // player 1 win, start new game
-                    winCounter1++
+                    // player 2 win, start new game
+                    fmt.Println("player 2 wins")
+                    winCounter2++
                     break
                 } else if checkDraw(state.Grid) {
                     // draw, start new game
+                    fmt.Println("Draw after player 2 moved")
                     drawCounter++
                     break
                 }
+                fmt.Println("player 2 does not win after move")
             } else {
-                //player 2 win
-                winCounter2++
+                //player 1 win
+                winCounter1++
                 break
             }
-            fmt.Println("New state")
-            fmt.Println(state.Grid)
         }
     }
 
@@ -247,7 +257,7 @@ func MakeMove(state *State, columnIndex int, playerValue int) int {
 }
 
 func checkWinning(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
-    fmt.Println(rowIndex)
+    fmt.Printf("Row index %d\nStart to check winner against %d\n", rowIndex, playerValue)
     // columnIndex is left to right, rowIndex is from top to bottom
     return checkColumn(grid, columnIndex, rowIndex, playerValue) ||
         checkRow(grid, columnIndex, rowIndex, playerValue) ||
