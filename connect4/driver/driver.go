@@ -296,7 +296,7 @@ func checkRow(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool
 }
 
 func checkSlashDiagonal(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
-    // rowIndex is top to bottom, figure out the left down starting cell and up right end cell
+    // rowIndex is top to bottom, figure out the lower left starting cell and upper right end cell
     // the distance check is make sure we are not running out of grid/index
     win := false
     leftDistance := 3
@@ -339,7 +339,7 @@ func checkSlashDiagonal(grid [][]int, columnIndex int, rowIndex int, playerValue
 }
 
 func checkBackslashDiagonal(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
-    // rowIndex is top to bottom, figure out the upper left starting cell and right down end cell
+    // rowIndex is top to bottom, figure out the upper left starting cell and lower right end cell
     // the distance check is make sure we are not running out of grid/index
     win := false
     leftDistance := 3
