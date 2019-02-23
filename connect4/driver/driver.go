@@ -20,10 +20,11 @@ var cin2 chan []byte = make(chan []byte)
 
 var width, height int
 var tournament bool
+var winCounter1, winCounter2, drawCounter int
 var cmd1, cmd2 *exec.Cmd
 
 type State struct {
-    Grid   [][]int `json:"grid"`
+    Grid [][]int `json:"grid"` //[width][height]
 }
 
 type Request struct {
@@ -145,36 +146,68 @@ func main() {
         state := StartNewGame()
         var moveRequest Request
 
-        bytes, err := json.Marshal(state)
-        if err != nil {
-            fmt.Println("Fail to marshal state " + string(bytes))
-        }
-        request := call_port1(append(bytes, '\n'))
-        json.Unmarshal(request, &moveRequest)
+        for {
+            bytes, err := json.Marshal(state)
+            if err != nil {
+                fmt.Println("Fail to marshal state " + string(bytes))
+            }
+            request := call_port1(append(bytes, '\n'))
+            json.Unmarshal(request, &moveRequest)
 
-        fmt.Println(moveRequest)
-        if ValidateMove(state, moveRequest.Move) {
-            MakeMove(state, moveRequest.Move, 1)
-        }
-        fmt.Println("New state")
-        fmt.Println(state.Grid)
+            fmt.Println(moveRequest)
+            if ValidateMove(state, moveRequest.Move) {
+                rowIndex := MakeMove(state, moveRequest.Move, 1)
+                if checkWinning(state.Grid, moveRequest.Move, rowIndex, 1) {
+                    // player 1 win, start new game
+                    winCounter1++
+                    break
+                } else if checkDraw(state.Grid) {
+                    // draw, start new game
+                    drawCounter++
+                    break
+                }
+            } else {
+                //player 2 win
+                winCounter2++
+                break
+            }
+            fmt.Println("New state")
+            fmt.Println(state.Grid)
 
-        bytes, err = json.Marshal(state)
-        if err != nil {
-            fmt.Println("Fail to marshal state " + string(bytes))
-        }
-        request = call_port2(append(bytes, '\n'))
-        json.Unmarshal(request, &moveRequest)
 
-        fmt.Println(moveRequest)
-        if ValidateMove(state, moveRequest.Move) {
-            MakeMove(state, moveRequest.Move, 2)
-        }
-        fmt.Println("New state")
-        fmt.Println(state.Grid)
+            bytes, err = json.Marshal(state)
+            if err != nil {
+                fmt.Println("Fail to marshal state " + string(bytes))
+            }
+            request = call_port2(append(bytes, '\n'))
+            json.Unmarshal(request, &moveRequest)
 
+            fmt.Println(moveRequest)
+            if ValidateMove(state, moveRequest.Move) {
+                rowIndex := MakeMove(state, moveRequest.Move, 2)
+                if checkWinning(state.Grid, moveRequest.Move, rowIndex, 2) {
+                    // player 1 win, start new game
+                    winCounter1++
+                    break
+                } else if checkDraw(state.Grid) {
+                    // draw, start new game
+                    drawCounter++
+                    break
+                }
+            } else {
+                //player 2 win
+                winCounter2++
+                break
+            }
+            fmt.Println("New state")
+            fmt.Println(state.Grid)
+        }
     }
 
+    fmt.Println("Result")
+    fmt.Println(winCounter1)
+    fmt.Println(winCounter2)
+    fmt.Println(drawCounter)
 
     cmd1.Process.Kill()
     cmd2.Process.Kill()
@@ -192,19 +225,165 @@ func StartNewGame() *State {
     return initialState
 }
 
-func ValidateMove(state *State, moveIndex int) bool {
-    if state.Grid[moveIndex][0] == 0 {
+func ValidateMove(state *State, columnIndex int) bool {
+    if state.Grid[columnIndex][0] == 0 {
         return true
     } else {
         return false
     }
 }
 
-func MakeMove(state *State, moveIndex int, player int) {
-    for i := height - 1; i >= 0; i-- {
-        if state.Grid[moveIndex][i] == 0 {
-            state.Grid[moveIndex][i] = player
+func MakeMove(state *State, columnIndex int, playerValue int) int {
+    // rowIndex is top to bottom
+    rowIndex := height - 1
+    for ; rowIndex >= 0; rowIndex-- {
+        if state.Grid[columnIndex][rowIndex] == 0 {
+            state.Grid[columnIndex][rowIndex] = playerValue
             break
         }
     }
+
+    return rowIndex
+}
+
+func checkWinning(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
+    fmt.Println(rowIndex)
+    // columnIndex is left to right, rowIndex is from top to bottom
+    return checkColumn(grid, columnIndex, rowIndex, playerValue) ||
+        checkRow(grid, columnIndex, rowIndex, playerValue) ||
+        checkSlashDiagonal(grid, columnIndex, rowIndex, playerValue) ||
+        checkBackslashDiagonal(grid, columnIndex, rowIndex, playerValue)
+}
+
+func checkColumn(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
+    win := false
+    if rowIndex + 4 < height &&
+        grid[columnIndex][rowIndex+1] == playerValue &&
+        grid[columnIndex][rowIndex+2] == playerValue &&
+        grid[columnIndex][rowIndex+3] == playerValue {
+            win = true
+    }
+    return win
+}
+
+func checkRow(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
+    win := false
+    minCol := 0
+    if columnIndex - 3 > minCol {
+        minCol = columnIndex - 3
+    }
+    maxCol := width - 1
+    if columnIndex + 3 < maxCol {
+        maxCol = columnIndex + 3
+    }
+
+    for i := minCol; i <= maxCol - 3; i++ {
+        if grid[i][rowIndex] == playerValue &&
+            grid[i+1][rowIndex] == playerValue &&
+            grid[i+2][rowIndex] == playerValue &&
+            grid[i+3][rowIndex] == playerValue {
+                win = true
+                break
+        }
+    }
+
+    return win
+}
+
+func checkSlashDiagonal(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
+    // rowIndex is top to bottom, figure out the left down starting cell and up right end cell
+    // the distance check is make sure we are not running out of grid/index
+    win := false
+    leftDistance := 3
+    if columnIndex - 0 < leftDistance {
+        leftDistance = columnIndex - 0
+    }
+    lowerDistance := 3
+    if height - 1 - rowIndex < lowerDistance {
+        lowerDistance = height - 1 - rowIndex
+    }
+    lowerLeftDistance := leftDistance
+    if lowerDistance < lowerLeftDistance {
+        lowerLeftDistance = lowerDistance
+    }
+
+    rightDistance := 3
+    if width - 1 - columnIndex < rightDistance {
+        rightDistance = width - 1 - columnIndex
+    }
+    upperDistance := 3
+    if rowIndex - 0 < upperDistance {
+        upperDistance = rowIndex - 0
+    }
+    upperRightDistance := rightDistance
+    if upperDistance < upperRightDistance {
+        upperRightDistance = upperDistance
+    }
+
+    for i, j := columnIndex - lowerLeftDistance, rowIndex + lowerLeftDistance; i <= columnIndex + upperRightDistance - 3; i, j = i+1, j-1 {
+        if grid[i][j] == playerValue &&
+            grid[i+1][j-1] == playerValue &&
+            grid[i+2][j-2] == playerValue &&
+            grid[i+3][j-3] == playerValue {
+            win = true
+            break
+        }
+    }
+
+    return win
+}
+
+func checkBackslashDiagonal(grid [][]int, columnIndex int, rowIndex int, playerValue int) bool {
+    // rowIndex is top to bottom, figure out the upper left starting cell and right down end cell
+    // the distance check is make sure we are not running out of grid/index
+    win := false
+    leftDistance := 3
+    if columnIndex - 0 < leftDistance {
+        leftDistance = columnIndex - 0
+    }
+    upperDistance := 3
+    if rowIndex - 0 < upperDistance {
+        upperDistance = rowIndex - 0
+    }
+    upperLeftDistance := leftDistance
+    if upperDistance < upperLeftDistance {
+        upperLeftDistance = upperDistance
+    }
+
+    rightDistance := 3
+    if width - 1 - columnIndex < rightDistance {
+        rightDistance = width - 1 - columnIndex
+    }
+    lowerDistance := 3
+    if height - 1 - rowIndex < lowerDistance {
+        lowerDistance = height - 1 - rowIndex
+    }
+    lowerRightDistance := rightDistance
+    if lowerDistance < lowerRightDistance {
+        lowerRightDistance = lowerDistance
+    }
+
+    for i, j := columnIndex - upperLeftDistance, rowIndex - upperLeftDistance; i <= columnIndex + lowerRightDistance - 3; i, j = i+1, j+1 {
+        if grid[i][j] == playerValue &&
+            grid[i+1][j+1] == playerValue &&
+            grid[i+2][j+2] == playerValue &&
+            grid[i+3][j+3] == playerValue {
+            win = true
+            break
+        }
+    }
+
+    return win
+}
+
+func checkDraw(grid [][]int) bool {
+    // it is a draw if grid is fully filled(the trick is checking top row) without winner
+    draw := true
+    for i := 0; i < width; i++ {
+        if grid[i][0] == 0 {
+            draw = false
+            break
+        }
+    }
+    return draw
 }

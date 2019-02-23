@@ -5,19 +5,16 @@ import (
     "os"
     "flag"
     "encoding/json"
-    //"fmt"
     "math/rand"
     "bufio"
-	"fmt"
+	//"fmt"
 )
 
 var width int
 var height int
 
-var file1 *os.File
-
 type State struct {
-    Grid [][]int `json:"grid"`
+    Grid [][]int `json:"grid"` //[width][height]
 }
 
 type Request struct {
@@ -28,14 +25,6 @@ func main() {
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.Parse()
-
-    file1, _ = os.Create(fmt.Sprintf("%s%d%s", "player_pid_", os.Getpid(), ".txt"))
-
-    defer file1.Close()
-
-    file1.WriteString("Player started\n")
-	file1.WriteString(fmt.Sprintf("%s%d%s", "width is ", width, "\n"))
-	file1.WriteString(fmt.Sprintf("%s%d%s", "height is ", height, "\n"))
 
     for {
         state, err := GetState()
@@ -57,8 +46,6 @@ func GetState() (*State, error) {
     /*jsonBody := []byte(`{"grid":[[0,0,0,0,0,0],[0,0,0,0,1,1],[0,0,0,0,0,2],[0,0,0,0,0,0],[0,0,0,0,0,2],[0,0,0,0,0,1],[0,0,0,0,0,0]]}`)
 
     fmt.Println(string(jsonBody))*/
-
-    file1.WriteString("ready to read\n")
 
     reader := bufio.NewReader(os.Stdin)
     data, err := reader.ReadBytes('\n')
