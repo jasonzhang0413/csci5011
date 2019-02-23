@@ -8,6 +8,7 @@ import (
     "math/rand"
     "bufio"
 	//"fmt"
+    "time"
 )
 
 var width int
@@ -25,6 +26,8 @@ func main() {
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.Parse()
+
+    rand.Seed(time.Now().UnixNano())
 
     for {
         state, err := GetState()
