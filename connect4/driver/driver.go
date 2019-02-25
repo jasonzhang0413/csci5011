@@ -86,7 +86,7 @@ func start() {
     }
     // close fo on exit and check for its returned error
     defer func() {
-        if err := file1.Close(); err != nil {
+        if err := file2.Close(); err != nil {
             panic(err)
         }
     }()
@@ -132,8 +132,8 @@ func main() {
 
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
-    flag.StringVar(&player1Cmd, "player1Cmd", "../player/player", "The command to invoke player1 program")
-    flag.StringVar(&player2Cmd, "player2Cmd", "../player/player", "The command to invoke player2 program")
+    flag.StringVar(&player1Cmd, "player1Cmd", "../player/player.mac", "The command to invoke player1 program")
+    flag.StringVar(&player2Cmd, "player2Cmd", "../player/player.mac", "The command to invoke player2 program")
     flag.IntVar(&tournamentTimes, "tournament", 1, "Tournament mode, number of games")
     flag.Parse()
 
