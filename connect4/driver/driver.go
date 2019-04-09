@@ -47,7 +47,7 @@ func call_port2(bytes []byte) []byte {
 func start() {
     fmt.Println("start")
 
-    cmd1 = exec.Command(player1Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
+    cmd1 = exec.Command(player1Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height), fmt.Sprintf("%s%d", "--player=", 1))
     stdin1, err := cmd1.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -71,7 +71,7 @@ func start() {
         log.Fatal(err)
     }
 
-    cmd2 = exec.Command(player2Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height))
+    cmd2 = exec.Command(player2Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height), fmt.Sprintf("%s%d", "--player=", 2))
     stdin2, err := cmd2.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -145,67 +145,133 @@ func main() {
         var moveRequest Request
 
         for {
-            //Player 1
-            bytes, err := json.Marshal(state)
-            if err != nil {
-                fmt.Println("Fail to marshal state " + string(bytes))
-            }
-            request := call_port1(append(bytes, '\n'))
-            json.Unmarshal(request, &moveRequest)
-
-            fmt.Printf("move request made by player 1, column index %d\n", moveRequest)
-            if ValidateMove(state, moveRequest.Move) {
-                rowIndex := MakeMove(state, moveRequest.Move, 1)
-                fmt.Println("Current state after player 1 moved")
-                fmt.Println(state.Grid)
-                if checkWinning(state.Grid, moveRequest.Move, rowIndex, 1) {
-                    // player 1 win, start new game
-                    fmt.Println("player 1 wins")
-                    winCounter1++
-                    break
-                } else if checkDraw(state.Grid) {
-                    // draw, start new game
-                    fmt.Println("Draw after player 1 moved")
-                    drawCounter++
-                    break
+            if i%2 == 1 {
+                //Player 1
+                bytes, err := json.Marshal(state)
+                if err != nil {
+                    fmt.Println("Fail to marshal state " + string(bytes))
                 }
-                fmt.Println("player 1 does not win after move")
-            } else {
-                //player 2 win
-                winCounter2++
-                break
-            }
+                request := call_port1(append(bytes, '\n'))
+                json.Unmarshal(request, &moveRequest)
 
-            //Player 2
-            bytes, err = json.Marshal(state)
-            if err != nil {
-                fmt.Println("Fail to marshal state " + string(bytes))
-            }
-            request = call_port2(append(bytes, '\n'))
-            json.Unmarshal(request, &moveRequest)
-
-            fmt.Printf("move request made by player 2, column index %d\n", moveRequest)
-            if ValidateMove(state, moveRequest.Move) {
-                rowIndex := MakeMove(state, moveRequest.Move, 2)
-                fmt.Println("Current state after player 2 moved")
-                fmt.Println(state.Grid)
-                if checkWinning(state.Grid, moveRequest.Move, rowIndex, 2) {
-                    // player 2 win, start new game
-                    fmt.Println("player 2 wins")
+                fmt.Printf("move request made by player 1, column index %d\n", moveRequest)
+                if ValidateMove(state, moveRequest.Move) {
+                    rowIndex := MakeMove(state, moveRequest.Move, 1)
+                    fmt.Println("Current state after player 1 moved")
+                    fmt.Println(state.Grid)
+                    if checkWinning(state.Grid, moveRequest.Move, rowIndex, 1) {
+                        // player 1 win, start new game
+                        fmt.Println("player 1 wins")
+                        winCounter1++
+                        break
+                    } else if checkDraw(state.Grid) {
+                        // draw, start new game
+                        fmt.Println("Draw after player 1 moved")
+                        drawCounter++
+                        break
+                    }
+                    fmt.Println("player 1 does not win after move")
+                } else {
+                    //player 2 win
                     winCounter2++
                     break
-                } else if checkDraw(state.Grid) {
-                    // draw, start new game
-                    fmt.Println("Draw after player 2 moved")
-                    drawCounter++
+                }
+
+                //Player 2
+                bytes, err = json.Marshal(state)
+                if err != nil {
+                    fmt.Println("Fail to marshal state " + string(bytes))
+                }
+                request = call_port2(append(bytes, '\n'))
+                json.Unmarshal(request, &moveRequest)
+
+                fmt.Printf("move request made by player 2, column index %d\n", moveRequest)
+                if ValidateMove(state, moveRequest.Move) {
+                    rowIndex := MakeMove(state, moveRequest.Move, 2)
+                    fmt.Println("Current state after player 2 moved")
+                    fmt.Println(state.Grid)
+                    if checkWinning(state.Grid, moveRequest.Move, rowIndex, 2) {
+                        // player 2 win, start new game
+                        fmt.Println("player 2 wins")
+                        winCounter2++
+                        break
+                    } else if checkDraw(state.Grid) {
+                        // draw, start new game
+                        fmt.Println("Draw after player 2 moved")
+                        drawCounter++
+                        break
+                    }
+                    fmt.Println("player 2 does not win after move")
+                } else {
+                    //player 1 win
+                    winCounter1++
                     break
                 }
-                fmt.Println("player 2 does not win after move")
             } else {
-                //player 1 win
-                winCounter1++
-                break
+                //Player 2
+                bytes, err := json.Marshal(state)
+                if err != nil {
+                    fmt.Println("Fail to marshal state " + string(bytes))
+                }
+                request := call_port2(append(bytes, '\n'))
+                json.Unmarshal(request, &moveRequest)
+
+                fmt.Printf("move request made by player 2, column index %d\n", moveRequest)
+                if ValidateMove(state, moveRequest.Move) {
+                    rowIndex := MakeMove(state, moveRequest.Move, 2)
+                    fmt.Println("Current state after player 2 moved")
+                    fmt.Println(state.Grid)
+                    if checkWinning(state.Grid, moveRequest.Move, rowIndex, 2) {
+                        // player 2 win, start new game
+                        fmt.Println("player 2 wins")
+                        winCounter2++
+                        break
+                    } else if checkDraw(state.Grid) {
+                        // draw, start new game
+                        fmt.Println("Draw after player 2 moved")
+                        drawCounter++
+                        break
+                    }
+                    fmt.Println("player 2 does not win after move")
+                } else {
+                    //player 1 win
+                    winCounter1++
+                    break
+                }
+
+                //Player 1
+                bytes, err = json.Marshal(state)
+                if err != nil {
+                    fmt.Println("Fail to marshal state " + string(bytes))
+                }
+                request = call_port1(append(bytes, '\n'))
+                json.Unmarshal(request, &moveRequest)
+
+                fmt.Printf("move request made by player 1, column index %d\n", moveRequest)
+                if ValidateMove(state, moveRequest.Move) {
+                    rowIndex := MakeMove(state, moveRequest.Move, 1)
+                    fmt.Println("Current state after player 1 moved")
+                    fmt.Println(state.Grid)
+                    if checkWinning(state.Grid, moveRequest.Move, rowIndex, 1) {
+                        // player 1 win, start new game
+                        fmt.Println("player 1 wins")
+                        winCounter1++
+                        break
+                    } else if checkDraw(state.Grid) {
+                        // draw, start new game
+                        fmt.Println("Draw after player 1 moved")
+                        drawCounter++
+                        break
+                    }
+                    fmt.Println("player 1 does not win after move")
+                } else {
+                    //player 2 win
+                    winCounter2++
+                    break
+                }
             }
+
+
         }
     }
 
