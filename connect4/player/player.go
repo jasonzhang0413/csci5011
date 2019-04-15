@@ -26,7 +26,7 @@ type Request struct {
 func main() {
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
-    flag.IntVar(&height, "player", 1, "The player number, default 1")
+    flag.IntVar(&player, "player", 1, "The player number, default 1")
     flag.Parse()
 
     rand.Seed(time.Now().UnixNano())
