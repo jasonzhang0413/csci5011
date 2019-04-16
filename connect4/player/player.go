@@ -1,14 +1,15 @@
 package main
 
 import (
-    "log"
+    //"log"
     "os"
     "flag"
     "encoding/json"
     "math/rand"
     "bufio"
-	//"fmt"
     "time"
+    "fmt"
+    "io"
 )
 
 var width int
@@ -31,10 +32,18 @@ func main() {
 
     rand.Seed(time.Now().UnixNano())
 
+    file, err := os.Create(fmt.Sprintf("player%d_error.txt", player))
+    if err != nil {
+        file.Name()
+    }
+
     for {
         state, err := GetState()
         if err != nil {
-            log.Println("error reading " + err.Error())
+            if err != io.EOF {
+                file.WriteString(err.Error())
+            }
+            break
         }
 
         moveIndex := MakeValidMove(state)
@@ -54,6 +63,10 @@ func GetState() (*State, error) {
 
     reader := bufio.NewReader(os.Stdin)
     data, err := reader.ReadBytes('\n')
+
+    if len(data) == 0 {
+        return nil, io.EOF
+    }
 
     var state State
 

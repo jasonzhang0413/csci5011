@@ -10,6 +10,7 @@ import (
     "flag"
     "encoding/json"
     "bufio"
+    "strings"
 )
 
 var cout1 chan []byte = make(chan []byte)
@@ -20,7 +21,7 @@ var cin2 chan []byte = make(chan []byte)
 
 var width, height int
 var tournamentTimes int
-var player1Cmd, player2Cmd string
+var player1Cmd, player1Args, player2Cmd, player2Args string
 var winCounter1, winCounter2, drawCounter int
 var cmd1, cmd2 *exec.Cmd
 
@@ -47,7 +48,12 @@ func call_port2(bytes []byte) []byte {
 func start() {
     fmt.Println("start")
 
-    cmd1 = exec.Command(player1Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height), fmt.Sprintf("%s%d", "--player=", 1))
+    args1 := strings.Split(player1Args, ",")
+    args1 = append(args1, fmt.Sprintf("%s%d", "--width=", width))
+    args1 = append(args1, fmt.Sprintf("%s%d", "--height=", height))
+    args1 = append(args1, fmt.Sprintf("%s%d", "--player=", 1))
+    cmd1 = exec.Command(player1Cmd, args1...)
+    //cmd1 = exec.Command("/usr/local/go/bin/go", "run", "/Users/jzhang201/go/src/csci5011/connect4/player/player.go", "--width=7", "--height=6", "--player=1")
     stdin1, err := cmd1.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -71,7 +77,11 @@ func start() {
         log.Fatal(err)
     }
 
-    cmd2 = exec.Command(player2Cmd, fmt.Sprintf("%s%d", "--width=", width), fmt.Sprintf("%s%d", "--height=", height), fmt.Sprintf("%s%d", "--player=", 2))
+    args2 := strings.Split(player2Args, ",")
+    args2 = append(args2, fmt.Sprintf("%s%d", "--width=", width))
+    args2 = append(args2, fmt.Sprintf("%s%d", "--height=", height))
+    args2 = append(args2, fmt.Sprintf("%s%d", "--player=", 2))
+    cmd2 = exec.Command(player2Cmd, args2...)
     stdin2, err := cmd2.StdinPipe()
     if err != nil {
         log.Fatal(err)
@@ -133,7 +143,9 @@ func main() {
     flag.IntVar(&width, "width", 7, "The width of grid for connect four game, default 7")
     flag.IntVar(&height, "height", 6, "The height of grid for connect four game, default 6")
     flag.StringVar(&player1Cmd, "player1Cmd", "../player/player.mac", "The command to invoke player1 program")
+    flag.StringVar(&player1Args, "player1Args", "", "The arguments to invoke player1 program")
     flag.StringVar(&player2Cmd, "player2Cmd", "../player/player.mac", "The command to invoke player2 program")
+    flag.StringVar(&player2Args, "player2Args", "", "The arguments to invoke player2 program")
     flag.IntVar(&tournamentTimes, "tournament", 1, "Tournament mode, number of games")
     flag.Parse()
 
