@@ -40,17 +40,20 @@ func main() {
     for {
         state, err := GetState()
         if err != nil {
-            if err != io.EOF {
-                file.WriteString(err.Error())
+            if err == io.EOF {
+                //pipe terminated, exit program
+                break
+            } else {
+                //error handling, log the error
+                file.WriteString(err.Error() + "\n")
             }
-            break
+        } else {
+            moveIndex := MakeValidMove(state)
+            request := &Request{Move: moveIndex}
+
+            enc := json.NewEncoder(os.Stdout)
+            enc.Encode(request)
         }
-
-        moveIndex := MakeValidMove(state)
-        request := &Request{Move: moveIndex}
-
-        enc := json.NewEncoder(os.Stdout)
-        enc.Encode(request)
     }
 
 }

@@ -292,6 +292,7 @@ func main() {
     fmt.Printf("Player 2 wins %d times\n", winCounter2)
     fmt.Printf("Draw happens %d times\n", drawCounter)
 
+    //optional, make sure the player program is not left as orphan process
     cmd1.Process.Kill()
     cmd2.Process.Kill()
 
