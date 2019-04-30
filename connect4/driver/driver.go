@@ -48,7 +48,10 @@ func call_port2(bytes []byte) []byte {
 func start() {
     fmt.Println("start")
 
-    args1 := strings.Split(player1Args, ",")
+    var args1 []string
+    if len(player1Args) > 0 {
+        args1 = append(args1, strings.Split(player1Args, ",")...)
+    }
     args1 = append(args1, fmt.Sprintf("%s%d", "--width=", width))
     args1 = append(args1, fmt.Sprintf("%s%d", "--height=", height))
     args1 = append(args1, fmt.Sprintf("%s%d", "--player=", 1))
@@ -77,7 +80,10 @@ func start() {
         log.Fatal(err)
     }
 
-    args2 := strings.Split(player2Args, ",")
+    var args2 []string
+    if len(player2Args) > 0 {
+        args2 = append(args2, strings.Split(player2Args, ",")...)
+    }
     args2 = append(args2, fmt.Sprintf("%s%d", "--width=", width))
     args2 = append(args2, fmt.Sprintf("%s%d", "--height=", height))
     args2 = append(args2, fmt.Sprintf("%s%d", "--player=", 2))
